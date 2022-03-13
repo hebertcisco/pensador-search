@@ -4,9 +4,6 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 });
 
 module.exports = withBundleAnalyzer({
-  eslint: {
-    dirs: ['.'],
-  },
   poweredByHeader: false,
   trailingSlash: true,
   basePath: '',
