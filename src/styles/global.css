@@ -219,3 +219,6 @@ footer ul a:hover {
     text-align: center;
   }
 }
+.ajax-loader img {
+  width: 2rem;
+}
