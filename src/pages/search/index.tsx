@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 import { useRouter } from 'next/router';
 
@@ -9,6 +9,7 @@ import { SearchState } from '@/shared/enums/search';
 import { IPhrases, IResult } from '@/shared/interfaces/result.interface';
 import { AppConfig } from '@/utils/AppConfig';
 import { AjaxLoader } from '@/components/AjaxLoader';
+import { FormSearch } from '@/components/FormSearch';
 
 export const getServerSideProps = ({ query }: any) => ({
   props: query,
@@ -16,10 +17,10 @@ export const getServerSideProps = ({ query }: any) => ({
 
 const Search = ({ city, region, country }: any) => {
   const router = useRouter();
-
+  const { query } = router;
+  const [term, setTerm] = useState('');
   const [results, setResults] = React.useState<IResult>({} as IResult);
   const [state, setState] = React.useState<SearchState>(SearchState.None);
-  const { query } = router;
   const [phrases, setPhrases] = React.useState<IPhrases[] | any>([]);
   const [currentPage, setCurrentPage] = React.useState(1);
 
@@ -40,12 +41,12 @@ const Search = ({ city, region, country }: any) => {
 
         setPhrases(_phrases.slice(start, end));
         setState(SearchState.Success);
+
       } else {
         setState(SearchState.Error);
       }
     });
   }, [query.term]);
-
   return (
     <>
       <Meta
@@ -271,13 +272,23 @@ const Search = ({ city, region, country }: any) => {
               </a>
             </li>
             <li>
-              <button className="signIn" type="button" name="button">
-                Github
+              <button
+                className="signIn"
+                type="button"
+                name="button"
+                onClick={() => router.back()}
+              >
+                Voltar
               </button>
             </li>
           </ul>
           <div className="searchTools">
-            <input type="text" defaultValue={query.term} />
+            <div className="form">
+              <FormSearch
+                setTerm={setTerm}
+                term={term}
+                setState={setState} />
+            </div>
             <ul className="searchToolOptions">
               <li className="left active">
                 <a href="#results:void()">Resultados</a>
@@ -315,7 +326,7 @@ const Search = ({ city, region, country }: any) => {
                 </>)}
                 {phrases?.map((frase: IPhrases, index: number) => (
                   <div className="result" key={index}>
-                    <h2>{index+1} {frase.texto}</h2>
+                    <h2>{frase.texto}</h2>
                     <p>
                       <span>{frase.autor} - </span>
                       {frase.texto}
