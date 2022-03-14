@@ -6,8 +6,9 @@ import { Meta } from '@/layout/Meta';
 import { LINKS_LIST } from '@/shared/constants';
 import { dbResult } from '@/shared/database/result';
 import { SearchState } from '@/shared/enums/search';
-import { IResult } from '@/shared/interfaces/result.interface';
+import { IPhrases, IResult } from '@/shared/interfaces/result.interface';
 import { AppConfig } from '@/utils/AppConfig';
+import { AjaxLoader } from '@/components/AjaxLoader';
 
 export const getServerSideProps = ({ query }: any) => ({
   props: query,
@@ -19,17 +20,32 @@ const Search = ({ city, region, country }: any) => {
   const [results, setResults] = React.useState<IResult>({} as IResult);
   const [state, setState] = React.useState<SearchState>(SearchState.None);
   const { query } = router;
+  const [phrases, setPhrases] = React.useState<IPhrases[] | any>([]);
+  const [currentPage, setCurrentPage] = React.useState(1);
 
   React.useEffect(() => {
+    setState(SearchState.Loading);
     dbResult.result.toArray().then((result) => {
       if (result.length !== 0) {
+        setState(SearchState.Loaded);
         setResults(result[0] as IResult);
+
+        const _phrases = result[0]?.frases.map((phrase: IPhrases) => phrase) as IPhrases[];
+        const pageSize = _phrases.length;
+
+        setCurrentPage(Number(query.page) * 10 || 10);
+
+        const start = (currentPage / pageSize) * pageSize;
+        const end = start + 10;
+
+        setPhrases(_phrases.slice(start, end));
         setState(SearchState.Success);
       } else {
         setState(SearchState.Error);
       }
     });
   }, [query.term]);
+
   return (
     <>
       <Meta
@@ -245,7 +261,9 @@ const Search = ({ city, region, country }: any) => {
       </style>
       <div>
         <div className="topContainer">
-          <img src="/assets/images/psychology-ga23f2e239_1920.png" alt={'psychology'} />
+          <a href="/">
+            <img src="/assets/images/psychology-ga23f2e239_1920.png" alt={'psychology'} />
+          </a>
           <ul className="accountOptions">
             <li>
               <a href="#">
@@ -262,7 +280,7 @@ const Search = ({ city, region, country }: any) => {
             <input type="text" defaultValue={query.term} />
             <ul className="searchToolOptions">
               <li className="left active">
-                <a href="#">Resultados</a>
+                <a href="#results:void()">Resultados</a>
               </li>
               {LINKS_LIST.map((link, index) =>
                 index > 1 ? (
@@ -280,19 +298,24 @@ const Search = ({ city, region, country }: any) => {
         </div>
         <div>
           {state === SearchState.None && <p>None</p>}
-          {state === SearchState.Loading && <p>Loading</p>}
-          {state === SearchState.Loaded && <p>Loaded</p>}
+          {state === SearchState.Loading && <AjaxLoader style={{ marginLeft: '10%' }}/>}
           {state === SearchState.Error && <p>Error</p>}
-          {state === SearchState.Stored && <p>Stored</p>}
+
           {state === SearchState.Success && results?.frases?.length !== 0 && (
             <>
               <div className="searchResults">
-                <p className="numberOfResults">
-                  About {results.total} results {/* (0.48 seconds) */}
-                </p>
-                {results.frases?.map((frase, index) => (
+                {currentPage !== 10 ? (<>
+                  <p className="numberOfResults">
+                    Resultados da página {currentPage} de {results.total}
+                  </p>
+                </>):(<>
+                  <p className="numberOfResults">
+                    Aproximadamente {results.total} resultados {/* (0.48 seconds) */}
+                  </p>
+                </>)}
+                {phrases?.map((frase: IPhrases, index: number) => (
                   <div className="result" key={index}>
-                    <h2>{frase.texto}</h2>
+                    <h2>{index+1} {frase.texto}</h2>
                     <p>
                       <span>{frase.autor} - </span>
                       {frase.texto}
@@ -335,18 +358,23 @@ const Search = ({ city, region, country }: any) => {
                     </tr>
                     <tr>
                       <td className="pageNumber" />
-                      <td className="pageNumber">1</td>
-                      <td className="pageNumber">2</td>
-                      <td className="pageNumber">3</td>
-                      <td className="pageNumber">4</td>
-                      <td className="pageNumber">5</td>
-                      <td className="pageNumber">6</td>
-                      <td className="pageNumber">7</td>
-                      <td className="pageNumber">8</td>
-                      <td className="pageNumber">9</td>
-                      <td className="pageNumber">10</td>
+                      {[...Array(results.total / 10)].map((_, index) => (
+                        <td className="pageNumber">
+                          <a
+                            href={`/search?term=${query.term}&page=${index + 1}`}
+                            className="red"
+                          >{index + 1}</a>
+                        </td>
+                      ))}
                       <td colSpan={3} />
-                      <td className="pageNumber">Next</td>
+                      <td className="pageNumber">
+                        <a
+                          href={`/search?term=${query.term}&page=${Number(query.page) + 1}`}
+                          className="red"
+                        >
+                          Próxima
+                        </a>
+                      </td>
                     </tr>
                   </tbody>
                 </table>
